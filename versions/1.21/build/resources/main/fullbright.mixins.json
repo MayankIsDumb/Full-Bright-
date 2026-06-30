@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.mayank.fullbright.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+	],
+	"client": [
+		"OverrideIllegalMixin",
+		"FogRendererMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

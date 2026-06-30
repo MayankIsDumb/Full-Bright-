@@ -1,0 +1,28 @@
+{
+    "schemaVersion": 1,
+    "id": "fullbright",
+    "version": "1.0.0+1.21",
+    "name": "Fullbright",
+    "description": "A lightweight Fullbright and Fog Remover mod.",
+    "authors": ["Mayank"],
+    "contact": {},
+    "license": "MIT",
+    "icon": "assets/fullbright/icon.png",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.mayank.fullbright.FullBrightClient"
+        ]
+    },
+    "mixins": [
+        {
+            "config": "fullbright.mixins.json",
+            "environment": "client"
+        }
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "1.21",
+        "java": ">=21"
+    }
+}

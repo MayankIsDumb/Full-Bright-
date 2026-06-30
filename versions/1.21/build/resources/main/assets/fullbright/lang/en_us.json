@@ -1,0 +1,9 @@
+{
+  "key.fullbright.toggle": "Toggle Fullbright",
+  "key.fullbright.nofog": "Toggle No Fog",
+  "key.fullbright.config": "Open Config",
+  "category.fullbright": "Fullbright",
+  "text.fullbright.enabled": "Fullbright: Enabled",
+  "text.fullbright.disabled": "Fullbright: Disabled",
+  "title.fullbright.config": "Fullbright Config"
+}
