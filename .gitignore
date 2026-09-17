@@ -1,0 +1,7 @@
+.gradle/
+build/
+versions/*/build/
+versions/26.3/run/
+versions/26.3-vanilla/
+.gradle-loom-cache
+

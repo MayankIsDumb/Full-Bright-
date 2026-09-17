@@ -23,8 +23,12 @@ public class LightingManager {
     private static final String BRIGHT_INTENSITY = "brightIntensity";
 
     private static boolean isActive = false;
-    public static boolean rememberActive = false;
+    public static boolean rememberActive = true;
     public static boolean noFog = false;
+
+    // Gamma the player had before the first toggle-on (vanilla default is
+    // 0.5). Restored on toggle-off so OFF never leaves max brightness behind.
+    private static Double previousGamma = null;
 
     // Intensity values
     public static int brightIntensity = 15;  // 0-15 light level
@@ -45,8 +49,36 @@ public class LightingManager {
     public static void setActive(boolean value) {
         isActive = value;
         applyGamma();
-        if (Minecraft.getInstance().levelRenderer != null) {
-            Minecraft.getInstance().levelRenderer.allChanged();
+        refreshLevelRenderer();
+    }
+
+    /**
+     * Version-tolerant chunk/level refresh.
+     * 1.21.x / 26.1.x have LevelRenderer#allChanged().
+     * 26.3 removed it — and NEITHER 26.3 fallback is safe:
+     * - resetLevelRenderData() releases all buffers and nulls ViewArea
+     *   without rebuilding it, so the next frame crashes with an NPE in
+     *   LevelRenderer#repositionCamera.
+     * - invalidateCompiledGeometry() rebuilds ViewArea but leaves the
+     *   extractor's SectionUpdateTracker (which still believes every
+     *   section is compiled) in place, so no section is ever re-queued
+     *   and the world stays blank forever. Vanilla only calls it together
+     *   with a fresh SectionUpdateTracker.
+     * No refresh is needed on 26.3 anyway: gamma is consumed per-frame by
+     * LightmapRenderStateExtractor and fog by FogRenderer#setupFog, so
+     * both toggles apply instantly without touching chunk data.
+     * Reflection keeps common code compiling against all versions.
+     */
+    public static void refreshLevelRenderer() {
+        try {
+            Object renderer = Minecraft.getInstance().levelRenderer;
+            if (renderer == null) return;
+            try {
+                renderer.getClass().getMethod("allChanged").invoke(renderer);
+            } catch (NoSuchMethodException ignored) {
+                // 26.3+: nothing to do (see above).
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -55,10 +87,17 @@ public class LightingManager {
         if (mc.options == null) return;
 
         if (isActive) {
+            // Remember the player's own brightness once, so toggle-off can
+            // restore it exactly (vanilla default is 0.5, not 1.0).
+            if (previousGamma == null) {
+                previousGamma = (Double) mc.options.gamma().get();
+            }
             // OverrideIllegalMixin bypasses clamping so we can set >1.0
             mc.options.gamma().set((double) brightIntensity);
         } else {
-            mc.options.gamma().set(1.0);
+            Double restore = previousGamma != null ? previousGamma : 0.5;
+            previousGamma = null;
+            mc.options.gamma().set(restore);
         }
     }
 
@@ -71,11 +110,14 @@ public class LightingManager {
     }
 
     public static void save() {
+        // Always persist enabled state — user expects fullbright to survive relaunch
+        // and not turn off when any game setting changes.
+        rememberActive = true;
         StringBuilder json = new StringBuilder();
         json.append("{\n");
         json.append("\t\"").append(ENABLED).append("\": ").append(isActive).append(",\n");
         json.append("\t\"").append(NO_FOG).append("\": ").append(noFog).append(",\n");
-        json.append("\t\"").append(RETAIN_ON_STATE).append("\": ").append(rememberActive).append(",\n");
+        json.append("\t\"").append(RETAIN_ON_STATE).append("\": ").append(true).append(",\n");
         json.append("\t\"").append(ON_STATE).append("\": ").append(isActive).append(",\n");
         json.append("\t\"").append(BRIGHT_INTENSITY).append("\": ").append(brightIntensity).append(",\n");
         json.append("\t\"").append(KEY_TOGGLE).append("\": ").append(keyToggle).append(",\n");
@@ -137,10 +179,27 @@ public class LightingManager {
 
             parser.close();
 
-            if (rememberActive) isActive = setActiveState;
+            // Always restore — old configs with retain_on_state=false would otherwise lose state on relaunch.
+            isActive = setActiveState;
+            // Apply after load if options are already available; otherwise tick enforcer will do it.
+            try { applyGamma(); } catch (Exception ignored) {}
         } catch (Exception e) {
             FullBright.LOGGER.warn("Error parsing config, regenerating: {}", e.getMessage());
             save();
         }
+    }
+
+    /** Called every tick — re-enforces gamma if something (options screen, vanilla load) overwrote it. */
+    public static void enforceGammaIfNeeded() {
+        if (!isActive) return;
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.options == null) return;
+            Object cur = mc.options.gamma().get();
+            double curGamma = cur instanceof Double d ? d : ((Number) cur).doubleValue();
+            if (curGamma != (double) brightIntensity) {
+                mc.options.gamma().set((double) brightIntensity);
+            }
+        } catch (Exception ignored) {}
     }
 }

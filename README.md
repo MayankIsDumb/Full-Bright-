@@ -10,8 +10,8 @@ A lightweight Fullbright and Fog Remover mod for Minecraft.
 - Minecraft 1.21.4
 - Minecraft 1.21.6
 - Minecraft 1.21.11
-- Minecraft 26.1
 - Minecraft 26.1.2
+- Minecraft 26.3
 
 ## Building
 
@@ -24,12 +24,14 @@ Build a specific version:
 ```powershell
 .\gradlew.bat :versions:1.21.1:build
 .\gradlew.bat :versions:26.1.2:build
+.\gradlew.bat :versions:26.3:build
 ```
 
 Run development client:
 ```powershell
 .\gradlew.bat :versions:1.21.1:runClient
 .\gradlew.bat :versions:26.1.2:runClient
+.\gradlew.bat :versions:26.3:runClient
 ```
 
 ## Features
@@ -45,7 +47,8 @@ Run development client:
 Fullbright/
 ├── common/              # Shared code (main + client)
 ├── versioned/
-│   ├── official/        # 26.1.x (unobfuscated mappings)
+│   ├── official/        # 26.1.x (unobfuscated mappings, GLFW)
+│   ├── official-26.3/   # 26.3 (unobfuscated, SDL - no GLFW)
 │   ├── official-1.21.11/
 │   ├── official-pre1.21.11/
 │   └── official-1.21.x/ # Per-version mixin variants

@@ -19,6 +19,7 @@ public class FullBrightClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         LightingManager.load();
+        try { LightingManager.applyGamma(); } catch (Exception ignored) {}
 
         CONFIG_KEY = new KeyMapping(
             "key.fullbright.config",
@@ -29,7 +30,7 @@ public class FullBrightClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(CONFIG_KEY);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // Don't process keybinds when a screen is open (chat, sign, book, etc.)
+            LightingManager.enforceGammaIfNeeded();
             if (client.screen != null) {
                 lastTogglePressed = false;
                 lastNoFogPressed = false;
